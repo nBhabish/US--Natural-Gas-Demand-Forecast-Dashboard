@@ -1,0 +1,12 @@
+@media (max-width: 576px) {  
+  .navbar-header {
+    width: 100% !important;
+  }
+  .navbar-toggle {
+      float: right !important;
+  }
+}
+
+.pull-right {
+  float: right !important;
+}
