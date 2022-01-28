@@ -13,6 +13,10 @@ library(modeltime)
 library(bslib)
 library(thematic)
 
+# Sourcing info_card.R ----
+
+source("00_scripts/info_card.r")
+
 shinyOptions(bootstrapLib = TRUE)
 thematic::thematic_shiny(font = "auto")
 
@@ -26,7 +30,10 @@ my_theme <- bslib::bs_theme(
   font_scale  = 1,
   primary = "#4285F4",
   secondary = "#4285F4",
-  success = "black"
+  success = "#1c3516",
+  danger = "#DB4437",
+  warning = "#0F9D58",
+  info    = "#F4B400"
 )
 
 
@@ -60,14 +67,8 @@ residual_in_sample_acf <-
       .model_desc == "ACTUAL" ~ "ACTUAL"
     )
   )
-residual_in_sample_acf %>% 
-  distinct(.model_desc)
 
-residual_in_sample_acf %>% 
-  filter(.model_desc %in% c("ETS: SEASONAL DECOMPOSITION", "ACTUAL")) %>% plot_modeltime_residuals()
-
-residual_in_sample_acf %>% 
-  distinct(.model_desc)
+metrics <- readRDS("00_data/metrics.rds")
 
 residual_out_of_sample_acf <-
   read_rds("00_data/residuals_out_of_sample_tbl.rds") %>%
@@ -88,7 +89,7 @@ residual_out_of_sample_acf <-
 #  UI ----
 
 ui <- navbarPage(
-  title = h2("United States Natural Gas Demand Forecast"),
+  title = h3("United States Natural Gas Demand Forecast"),
   inverse = FALSE,
   collapsible = TRUE,
   theme = my_theme,
@@ -102,13 +103,49 @@ ui <- navbarPage(
   
   # Application UI ----
   
-  # * Input Section -----
+  ## Input Section -----
   
   # TabPanel 1 ----
   tabPanel(
     title = h4("Forecast"),
     
+    div(
+      class = "container",
+      div(class = "header text-left",
+          h3(HTML("<b>Accuracy Metrics</b>")))
+    ),
     
+    div(class = "container",
+        fluidRow(
+          # class = "container",
+          id    = "favorite_cards",
+          
+          column(
+            width = 3, 
+            info_card(title     = "RMSE", bg_color = "danger", text_color = "white",
+                      value     = verbatimTextOutput(outputId = "rmse_metric"), main_icon = "battery-three-quarters")
+          ),
+          
+          
+          column(
+            width = 3, 
+            info_card(title     = "MAE", bg_color = "primary", text_color = "white",
+                      value     = verbatimTextOutput(outputId = "mae_metric"), main_icon = "lightbulb")
+          ),
+          
+          
+          column(
+            width = 3, 
+            info_card(title     = "RSQ", bg_color = "warning", text_color = "white",
+                      value     = verbatimTextOutput(outputId = "rsq_metric"))
+          ),
+          
+          column(
+            width = 3, 
+            info_card(title     = "MAPE", bg_color = "info", text_color = "white",
+                      value     = verbatimTextOutput(outputId = "mape_metric"), main_icon = "percent")
+        )
+    ),
     div(class = "container",
         id    = "application_ui",
         fluidRow(
@@ -119,7 +156,7 @@ ui <- navbarPage(
                 id = "main_input",
                 pickerInput(
                   inputId = "models",
-                  label   = h2("Models"),
+                  label   = h3("Models"),
                   choices = c(
                     "ARIMA",
                     "ARIMA: SEASONAL DECOMPOSITION",
@@ -185,11 +222,14 @@ ui <- navbarPage(
                      plotlyOutput(outputId = "plot_forecast"),
                    )
                  ))
-        ))
-  ),
+        )),
+    br(),
+    br(),
+    hr()
+  )),
   tabPanel(
     
-    # Phase Awards ----
+    # TabPanel 2 ----
     
     title = h4("Post-Forecast Diagnostics"),
     
@@ -202,7 +242,7 @@ ui <- navbarPage(
               id = "main_input",
               pickerInput(
                 inputId = "models_2",
-                label   = h2("Models"),
+                label   = h3("Models"),
                 choices = c(
                   "ARIMA",
                   "ARIMA: SEASONAL DECOMPOSITION",
@@ -284,10 +324,14 @@ ui <- navbarPage(
                    
                  ))
         ))
-  )
+  ),
+  
+  div(style = "height:50px;")
 )
 
+
 # Server ----
+
 
 server <- function(input, output, session) {
   # bs_themer()
@@ -314,9 +358,65 @@ server <- function(input, output, session) {
       
     }, ignoreNULL = FALSE)
   
+  # Metric Reactivity ----
+  
+  rmse_metric <- 
+    eventReactive(eventExpr = input$apply, {
+      metrics %>%
+        filter(.model_desc == input$models) %>% 
+        select(rmse) %>% 
+        mutate(rmse = rmse %>% scales::comma())
+      
+    }, ignoreNULL = FALSE)
+  
+  mae_metric <- 
+    eventReactive(eventExpr = input$apply, {
+      metrics %>%
+        filter(.model_desc == input$models) %>% 
+        select(mae) %>% 
+        mutate(mae = mae %>% scales::comma())
+      
+    }, ignoreNULL = FALSE)
+  
+  rsq_metric <- 
+    eventReactive(eventExpr = input$apply, {
+      metrics %>%
+        filter(.model_desc == input$models) %>% 
+        select(rsq) %>% 
+        round(3)
+      
+    }, ignoreNULL = FALSE)
+  
+  mape_metric <- 
+    eventReactive(eventExpr = input$apply, {
+      metrics %>%
+        filter(.model_desc == input$models) %>% 
+        select(mape) %>% 
+        round(3)
+      
+    }, ignoreNULL = FALSE)
+  
+  # Server: Metric OutputId ----
+  
+  output$rmse_metric <- renderText({
+    rmse_metric()$rmse
+  })  
+  
+  output$mae_metric <- renderText({
+    mae_metric()$mae
+  })
+  
+  output$rsq_metric <- renderText({
+    rsq_metric()$rsq
+  })  
+  
+  output$mape_metric <- renderText({
+    mape_metric()$mape
+  })
+  
   output$plot_forecast <- renderPlotly({
     models_renamed_reactive() %>%
-      plot_modeltime_forecast(.title = "Tracking United States Monthly Gas Demand Until 2023")
+      plot_modeltime_forecast(.title = "Forecasting United States Monthly Gas Demand Until 2023-02-01")
     
   })
   
