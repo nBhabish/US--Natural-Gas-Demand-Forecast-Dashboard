@@ -1,4 +1,5 @@
-# Libraries ----
+
+# Libraries ---------------------------------------------------------------
 
 library(shiny)
 library(shinyWidgets)
@@ -16,6 +17,9 @@ library(thematic)
 # Sourcing info_card.R ----
 
 source("00_scripts/info_card.r")
+
+
+# Theme w/ {bslib} & {thematic} -------------------------------------------
 
 shinyOptions(bootstrapLib = TRUE)
 thematic::thematic_shiny(font = "auto")
@@ -36,6 +40,7 @@ my_theme <- bslib::bs_theme(
   info    = "#F4B400"
 )
 
+# Data Cleaning -----------------------------------------------------------
 
 forecasted_data <- read_rds("00_data/forecast_data.rds")
 
@@ -85,8 +90,7 @@ residual_out_of_sample_acf <-
     )
   )
 
-
-#  UI ----
+# UI ----------------------------------------------------------------------
 
 ui <- navbarPage(
   title = h3("United States Natural Gas Demand Forecast"),
@@ -94,18 +98,20 @@ ui <- navbarPage(
   collapsible = TRUE,
   theme = my_theme,
   
+
+# * CSS -------------------------------------------------------------------
+
+  
+  
   tags$body(
     tags$link(rel = "stylesheet", type = "text/css", href = "style.css")
   ),
   
-  
   shinyjs::useShinyjs(),
+
+# * Tab Panel 1 -----------------------------------------------------------
+
   
-  # Application UI ----
-  
-  ## Input Section -----
-  
-  # TabPanel 1 ----
   tabPanel(
     title = h4("Forecast"),
     
@@ -229,7 +235,10 @@ ui <- navbarPage(
   )),
   tabPanel(
     
-    # TabPanel 2 ----
+
+# * TabPanel 2 ------------------------------------------------------------
+
+    
     
     title = h4("Post-Forecast Diagnostics"),
     
@@ -330,14 +339,17 @@ ui <- navbarPage(
 )
 
 
-# Server ----
-
+# Server ------------------------------------------------------------------
 
 server <- function(input, output, session) {
   # bs_themer()
   
-  # Server-side for tabPanel 1 ----
-  
+
+# * Server side for Tab Panel 1 -------------------------------------------
+
+
+
+    
   observeEvent(eventExpr = input$reset, handlerExpr = {
     updatePickerInput(session = session,
                       inputId = "models",
@@ -358,7 +370,10 @@ server <- function(input, output, session) {
       
     }, ignoreNULL = FALSE)
   
-  # Metric Reactivity ----
+
+# * Metrics Reactivity ----------------------------------------------------
+
+  
   
   rmse_metric <- 
     eventReactive(eventExpr = input$apply, {
@@ -396,7 +411,10 @@ server <- function(input, output, session) {
       
     }, ignoreNULL = FALSE)
   
-  # Server: Metric OutputId ----
+
+# * Metric OutputId -------------------------------------------------------
+
+  
   
   output$rmse_metric <- renderText({
     rmse_metric()$rmse
@@ -421,7 +439,10 @@ server <- function(input, output, session) {
   })
   
   
-  # Server-side for tabPanel 2 ----
+
+# * Server side for Tab Panel 2 -------------------------------------------
+
+  
   
   observeEvent(eventExpr = input$reset_1, handlerExpr = {
     updatePickerInput(session = session,
@@ -455,6 +476,11 @@ server <- function(input, output, session) {
       },
       ignoreNULL = FALSE
     )
+  
+
+# * Plot OutputId ---------------------------------------------------------
+
+  
   
   output$plotly_residuals_out_of_sample <- renderPlotly({
     residuals_out_of_sample_acf() %>% 
