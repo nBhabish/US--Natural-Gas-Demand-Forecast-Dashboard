@@ -14,6 +14,6 @@ The data used in the dashboard was forecasted on this <a href = "https://github.
 
 Cloning this repository, and running [app.R](app.R) will allow you to view the dashboard locally. 
 
-To view on your browser, click <a href = "https://bhabishya-neupane.shinyapps.io/US-Natural-Gas-Demand-Forecast-Dashboard/"> here </a>.
+To view on your browser, click <a href = "https://bhabishya-neupane.shinyapps.io/US-Natural-Gas-Demand-Forecast-Dashboard/" target = "_blank"> here </a>.
 
 <img src = "01_screenshot/dash_viz.png">
