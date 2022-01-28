@@ -1,5 +1,5 @@
 # US-Natural-Gas-Demand-Forecast-Dashboard
-> Natural Gas Demand Forecast Dashboard in the United States
+> United States Natural Gas Demand Forecast Dashboard
 
 ### Table of Contents
 
